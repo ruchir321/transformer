@@ -117,6 +117,22 @@ class MultiHeadAttention(nn.Module):
     out = self.proj(out)
     return out
 
+class LayerNorm(nn.Module):
+  """NOTE: UDF LayerNorm is not used for the model
+  A neuron must have a unit Gaussian distribution across feature dimension of each token"""
+  def __init(self, dim, eps=1e-5, momentum=0.1):
+    super().__init__()
+    self.eps = eps
+    self.gamma = torch.ones(dim)
+    self.beta = torch.zeros(dim)
+
+  def __call__(self, x):
+    # calculate forward pass
+    xmean = x.mean(1, keepdim=True) # layer mean
+    xvar = x.var(1, keepdim=True) # layer variance
+    xhat = (x - xmean) / torch.sqrt(xvar + self.eps)
+    self.out = xhat * self.gamma + self.beta
+
 
 class Feedforward(nn.Module):
   """ A simple linear layer followed by a non-linearity"""
@@ -140,12 +156,17 @@ class Block(nn.Module):
     head_size = n_embd // h
     self.sa = MultiHeadAttention(num_heads=h, head_size=head_size)
     self.ffwd = Feedforward(n_embd=n_embd)
+    self.ln1 = nn.LayerNorm(n_embd)
+    self.ln2 = nn.LayerNorm(n_embd)
 
   def forward(self, x):
     # communication
-    x = x + self.sa(x) # addition denotes residual connection
+    # addition denotes residual connection
+    # layernorm is applied before the transformation
+    #  This pre-norm implementation is different from the original paper
+    x = x + self.sa(self.ln1(x))
     # computation
-    x = x + self.ffwd(x)
+    x = x + self.ffwd(self.ln2(x))
     return x
 
 class BigramModel(nn.Module):
@@ -159,7 +180,8 @@ class BigramModel(nn.Module):
       Block(n_embd=n_embd, h=h),
       Block(n_embd=n_embd, h=h),
       Block(n_embd=n_embd, h=h),
-      Block(n_embd=n_embd, h=h)
+      Block(n_embd=n_embd, h=h),
+      nn.LayerNorm(n_embd)
     )
     # multi-attention heads
     self.sa_heads = MultiHeadAttention(num_heads=h, head_size=n_embd // h) # d_v = d_model / h # number of computations is same as single, larger self-attention head
