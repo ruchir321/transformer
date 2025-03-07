@@ -105,12 +105,48 @@ class Head(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-  def __init__(self, head_size):
+  """Multiple heads of scaled-dot product attention in parallel"""
+
+  def __init__(self, num_heads, head_size):
     super().__init__()
-    self.heads = nn.ModuleList([Head(head_size) for _ in range(h)])
+    self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+    self.proj = nn.Linear(n_embd, n_embd) # projection W_o => dim(h * d_v, d_model) (Vaswani et.al) # (h * d_v) = d_model = n_embd
 
   def forward(self, x):
-    return torch.cat([sa_head(x) for sa_head in self.heads], dim=-1)
+    out = torch.cat([sa_head(x) for sa_head in self.heads], dim=-1)
+    out = self.proj(out)
+    return out
+
+
+class Feedforward(nn.Module):
+  """ A simple linear layer followed by a non-linearity"""
+  def __init__(self, n_embd):
+    super().__init__()
+    self.net = nn.Sequential(
+      nn.Linear(n_embd, 4 * n_embd), # in Vaswani et. al. d_model = 512 & d_ff = 2048. So FF layer dimension has a multiplier of 4 in the inner layer
+      nn.ReLU(),
+      nn.Linear(4 * n_embd, n_embd) # same as initializing a self.proj attribute
+    )
+  
+  def forward(self, x):
+    return self.net(x)
+
+# Block: called "layer" in Vaswani et.al.
+class Block(nn.Module):
+  """Transformer block: communication then computation"""
+
+  def __init__(self, n_embd, h):
+    super().__init__()
+    head_size = n_embd // h
+    self.sa = MultiHeadAttention(num_heads=h, head_size=head_size)
+    self.ffwd = Feedforward(n_embd=n_embd)
+
+  def forward(self, x):
+    # communication
+    x = x + self.sa(x) # addition denotes residual connection
+    # computation
+    x = x + self.ffwd(x)
+    return x
 
 class BigramModel(nn.Module):
   def __init__(self):
@@ -119,8 +155,17 @@ class BigramModel(nn.Module):
     self.token_embedding_table = nn.Embedding(vocab_size, n_embd) # aka input embeddings (vaswani 2017) 
     self.positional_encoding_table = nn.Embedding(context_window, n_embd)
     
+    self.blocks = nn.Sequential(
+      Block(n_embd=n_embd, h=h),
+      Block(n_embd=n_embd, h=h),
+      Block(n_embd=n_embd, h=h),
+      Block(n_embd=n_embd, h=h)
+    )
     # multi-attention heads
-    self.sa_heads = MultiHeadAttention(n_embd // h) # d_v = d_model / h # number of computations is same as single, larger self-attention head
+    self.sa_heads = MultiHeadAttention(num_heads=h, head_size=n_embd // h) # d_v = d_model / h # number of computations is same as single, larger self-attention head
+    
+    self.ffwd = Feedforward(n_embd=n_embd)
+    
     # conversion from token embeddings to logits
     self.lm_head = nn.Linear(n_embd, vocab_size)
 
@@ -129,7 +174,7 @@ class BigramModel(nn.Module):
     token_embd = self.token_embedding_table(idx) # (B, T, C=n_embd=d_model) # x tokens are used as indices of embedding table
     pos_enc = self.positional_encoding_table(torch.arange(T, device=device)) # (T, C)
     x = token_embd + pos_enc # (B, T, C)
-    attention = self.sa_heads(x)
+    attention = self.blocks(x)
     logits = self.lm_head(attention) # (B, T, vocab_size)
 
     if targets is None:
