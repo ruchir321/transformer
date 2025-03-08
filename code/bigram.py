@@ -1,3 +1,5 @@
+# autoregressive text generation using embedding table (or something)
+
 import os
 import torch
 import torch.nn as nn

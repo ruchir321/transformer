@@ -1,3 +1,7 @@
+# implementation of a decoder-only transformer for text generation task
+# GPT family of models is decoder-only architecture
+# Vaswani's encoder-decoder architecture was purpose built for machine translation
+
 import os
 import torch
 import torch.nn as nn
@@ -6,16 +10,18 @@ from torch.nn import functional as F
 
 #################
 # hyperparameters
-batch_size = 16
-context_window = 8 # this is what karpathy calls block size in his code # same as N (Bishop, Deep Learning)
-max_iters = 6000 
-elval_intervals = 300
-learning_rate = 1e-3
+batch_size = 64
+context_window = 256 # this is what karpathy calls block size in his code # same as N (Bishop, Deep Learning)
+max_iters = 6000
+elval_intervals = 500
+learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
-n_embd = 32 # aka d_model (vaswani 2017)
+n_embd = 384 # aka d_model (vaswani 2017)
 # head_size = 16 # aka d_k = d_q (vaswani) # not used in multi-head attention
-h = 4 # head count
+n_heads = 6 # aka h (vaswani) # head count
+n_layers = 6
+dropout = 0.2
 
 #################
 
@@ -85,6 +91,7 @@ class Head(nn.Module):
     self.value = nn.Linear(n_embd, head_size, bias=False) # W_v
     # buffer: not a parameter
     self.register_buffer('tril', torch.tril(torch.ones(context_window, context_window)))
+    self.dropout = nn.Dropout(p=dropout)
   
   def forward(self, x):
     B, T, C = x.shape # T: N; C: d_model
@@ -97,6 +104,7 @@ class Head(nn.Module):
     mask = scale.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # optional: used only in decoder 
     
     softmax = F.softmax(mask, dim=-1) # (B, T, T)
+    softmax = nn.Dropout(p=dropout)
 
     v = self.value(x) # (B, T, head_size)
 
@@ -110,11 +118,12 @@ class MultiHeadAttention(nn.Module):
   def __init__(self, num_heads, head_size):
     super().__init__()
     self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
-    self.proj = nn.Linear(n_embd, n_embd) # projection W_o => dim(h * d_v, d_model) (Vaswani et.al) # (h * d_v) = d_model = n_embd
+    self.proj = nn.Linear(n_embd, n_embd) # projection W_o => dim(n_heads * d_v, d_model) (Vaswani et.al) # (n_heads * d_v) = d_model = n_embd
+    self.dropout = nn.Dropout(p=dropout)
 
   def forward(self, x):
     out = torch.cat([sa_head(x) for sa_head in self.heads], dim=-1)
-    out = self.proj(out)
+    out = self.dropout(self.proj(out))
     return out
 
 class LayerNorm(nn.Module):
@@ -141,7 +150,8 @@ class Feedforward(nn.Module):
     self.net = nn.Sequential(
       nn.Linear(n_embd, 4 * n_embd), # in Vaswani et. al. d_model = 512 & d_ff = 2048. So FF layer dimension has a multiplier of 4 in the inner layer
       nn.ReLU(),
-      nn.Linear(4 * n_embd, n_embd) # same as initializing a self.proj attribute
+      nn.Linear(4 * n_embd, n_embd), # same as initializing a self.proj attribute
+      nn.Dropout(p=dropout)
     )
   
   def forward(self, x):
@@ -151,10 +161,10 @@ class Feedforward(nn.Module):
 class Block(nn.Module):
   """Transformer block: communication then computation"""
 
-  def __init__(self, n_embd, h):
+  def __init__(self, n_embd, n_heads):
     super().__init__()
-    head_size = n_embd // h
-    self.sa = MultiHeadAttention(num_heads=h, head_size=head_size)
+    head_size = n_embd // n_heads
+    self.sa = MultiHeadAttention(num_heads=n_heads, head_size=head_size)
     self.ffwd = Feedforward(n_embd=n_embd)
     self.ln1 = nn.LayerNorm(n_embd)
     self.ln2 = nn.LayerNorm(n_embd)
@@ -176,15 +186,10 @@ class BigramModel(nn.Module):
     self.token_embedding_table = nn.Embedding(vocab_size, n_embd) # aka input embeddings (vaswani 2017) 
     self.positional_encoding_table = nn.Embedding(context_window, n_embd)
     
-    self.blocks = nn.Sequential(
-      Block(n_embd=n_embd, h=h),
-      Block(n_embd=n_embd, h=h),
-      Block(n_embd=n_embd, h=h),
-      Block(n_embd=n_embd, h=h),
-      nn.LayerNorm(n_embd)
-    )
+    self.blocks = nn.Sequential(*[Block(n_embd=n_embd, n_heads=n_heads) for _ in range(n_layers)])
+    
     # multi-attention heads
-    self.sa_heads = MultiHeadAttention(num_heads=h, head_size=n_embd // h) # d_v = d_model / h # number of computations is same as single, larger self-attention head
+    self.sa_heads = MultiHeadAttention(num_heads=n_heads, head_size=n_embd // n_heads) # d_v = d_model / n_heads # number of computations is same as single, larger self-attention head
     
     self.ffwd = Feedforward(n_embd=n_embd)
     

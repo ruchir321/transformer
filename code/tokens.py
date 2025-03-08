@@ -1,3 +1,4 @@
+# BPE encoding not used in implementation, cuz GPU poor
 import os
 os.getcwd()
 
@@ -17,4 +18,3 @@ encoding = tk.get_encoding('o200k_base')
 tokens = encoding.encode(txt)
 
 # skip text cleaning for now
-
