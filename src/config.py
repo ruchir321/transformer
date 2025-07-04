@@ -14,7 +14,7 @@ class ModelConfig:
     n_layer: int = 6  # The number of transformer blocks.
     dropout: float = 0.2  # The dropout rate.
     learning_rate: float = 3e-4  # The learning rate for the optimizer.
-    max_iters: int = 5000  # The total number of training iterations.
+    max_iters: int = 50000  # The total number of training iterations.
     eval_interval: int = 500  # How often to evaluate the model.
     eval_iters: int = 200  # The number of iterations to run for evaluation.
-    device: str = "cpu"  # The device to run the model on, e.g., 'cpu' or 'cuda'.
+    device: str = "cuda"  # The device to run the model on, e.g., 'cpu' or 'cuda'.
