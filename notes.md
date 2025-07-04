@@ -19,7 +19,6 @@ the result should be diffused to avoid peak attention to a single node in contex
 
 ## positional encoding
 
-https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/
-
+[Refer to article](https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/)
 
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
