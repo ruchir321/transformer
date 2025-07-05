@@ -1,0 +1,24 @@
+# Summary
+
+You’re working on improving a GPT model trained with a WikiHow dataset. The key focus is on using Reinforcement Learning with Human Feedback (RLHF) to refine its output quality and considering model distillation for efficiency.
+
+## TODO List
+
+### For RLHF
+
+Collect Feedback Data: Gather a dataset with human feedback on model outputs.
+Define a Reward Function: Establish criteria for evaluating the quality of responses.
+Train a Reward Model: Build a model to predict the quality of outputs using human feedback.
+Optimize with PPO: Implement Proximal Policy Optimization to adjust the model based on rewards.
+Iterate and Refine: Continuously update the model with new feedback and improved reward functions.
+
+### For Model Distillation
+
+Select Models: Define your teacher (current GPT model) and student (smaller) model architectures.
+Transfer Knowledge: Train the student model to replicate the teacher’s outputs using softened probabilities.
+Evaluate: Test the student model’s performance and make adjustments as needed.
+Miscellaneous:
+
+Documentation: Keep a detailed record of experiments, including configurations and outcomes.
+Plan Experiments: Set specific goals and metrics to measure the success of RLHF and distillation efforts.
+Rest well, and you’ll be ready to tackle these tasks when you resume work!
