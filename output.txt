@@ -1,0 +1,38 @@
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+
+
+config.json:   0%|          | 0.00/430 [00:00<?, ?B/s]
+config.json: 100%|██████████| 430/430 [00:00<00:00, 2.94MB/s]
+Traceback (most recent call last):
+  File "/home/user/app/app.py", line 5, in <module>
+    tokenizer = AutoTokenizer.from_pretrained("ruchir99/transformer-101")
+  File "/usr/local/lib/python3.10/site-packages/transformers/models/auto/tokenization_auto.py", line 1068, in from_pretrained
+    return tokenizer_class_fast.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/tokenization_utils_base.py", line 2014, in from_pretrained
+    return cls._from_pretrained(
+  File "/usr/local/lib/python3.10/site-packages/transformers/tokenization_utils_base.py", line 2052, in _from_pretrained
+    slow_tokenizer = (cls.slow_tokenizer_class)._from_pretrained(
+  File "/usr/local/lib/python3.10/site-packages/transformers/tokenization_utils_base.py", line 2260, in _from_pretrained
+    tokenizer = cls(*init_inputs, **init_kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/models/gpt2/tokenization_gpt2.py", line 153, in __init__
+    with open(vocab_file, encoding="utf-8") as vocab_handle:
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+
+
+config.json:   0%|          | 0.00/430 [00:00<?, ?B/s]
+config.json: 100%|██████████| 430/430 [00:00<00:00, 2.56MB/s]
+Traceback (most recent call last):
+  File "/home/user/app/app.py", line 5, in <module>
+    tokenizer = AutoTokenizer.from_pretrained("ruchir99/transformer-101")
+  File "/usr/local/lib/python3.10/site-packages/transformers/models/auto/tokenization_auto.py", line 1068, in from_pretrained
+    return tokenizer_class_fast.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/tokenization_utils_base.py", line 2014, in from_pretrained
+    return cls._from_pretrained(
+  File "/usr/local/lib/python3.10/site-packages/transformers/tokenization_utils_base.py", line 2052, in _from_pretrained
+    slow_tokenizer = (cls.slow_tokenizer_class)._from_pretrained(
+  File "/usr/local/lib/python3.10/site-packages/transformers/tokenization_utils_base.py", line 2260, in _from_pretrained
+    tokenizer = cls(*init_inputs, **init_kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/models/gpt2/tokenization_gpt2.py", line 153, in __init__
+    with open(vocab_file, encoding="utf-8") as vocab_handle:
+TypeError: expected str, bytes or os.PathLike object, not NoneType

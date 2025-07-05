@@ -1,2 +1,11 @@
+<<<<<<< HEAD
 models/transformer.pt
 data/
+=======
+*.safetensors
+
+transformer_101/__pycache__
+
+data/
+models/
+>>>>>>> 06fb81e (restarting git)
